@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>November word tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Tokens ===== */
+:root {
+  --paper: #f2f4f7;
+  --sheet: #ffffff;
+  --sheet-2: #e8ecf2;
+  --ink: #1b2433;
+  --ink-soft: #5a6577;
+  --rule: #d6dce5;
+  --blue: #2b4c7e;
+  --blue-light: #c9d6ea;
+  --blue-mid: #7c98c4;
+  --on-blue: #ffffff;
+  --gold: #b07d12;
+  --danger: #a3322a;
+  --serif: "Literata", Georgia, "Times New Roman", serif;
+  --sans: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161d;
+    --sheet: #1a2029;
+    --sheet-2: #232b36;
+    --ink: #e6eaf0;
+    --ink-soft: #9aa5b5;
+    --rule: #2e3846;
+    --blue: #8fb0e0;
+    --blue-light: #2a3a55;
+    --blue-mid: #4f6c99;
+    --on-blue: #0f1726;
+    --gold: #e0b04a;
+    --danger: #e98a80;
+    color-scheme: dark;
+  }
+}
+
+/* ===== Base ===== */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 var(--sans);
+  padding: env(safe-area-inset-top, 0px) 0 calc(76px + env(safe-area-inset-bottom, 0px));
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.wrap { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.2; margin: 0; }
+p { margin: 0; }
+.muted { color: var(--ink-soft); }
+.small { font-size: 0.875rem; }
+
+/* ===== Header and quote ===== */
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 20px 0 8px; }
+.top h1 { font-size: 1.25rem; }
+.day-badge { font-size: 0.875rem; color: var(--ink-soft); white-space: nowrap; }
+.quote { margin: 4px 0 20px; padding-left: 14px; border-left: 3px solid var(--blue-mid); }
+.quote p { font-family: var(--serif); font-style: italic; font-size: 1rem; line-height: 1.55; }
+.quote cite { display: block; margin-top: 4px; font-style: normal; font-size: 0.8125rem; color: var(--ink-soft); }
+
+/* ===== Surfaces ===== */
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+.card h2 { font-size: 1.125rem; margin-bottom: 12px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.row.between { justify-content: space-between; }
+.stack > * + * { margin-top: 12px; }
+
+/* ===== Hero (manuscript total) ===== */
+.hero .who h2 { font-size: 1.5rem; margin: 0; }
+.hero .project { font-family: var(--serif); font-style: italic; color: var(--ink-soft); margin-top: 2px; }
+.total { margin-top: 16px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; }
+.total .big { font-family: var(--serif); font-weight: 700; font-size: 2.75rem; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.total .of { color: var(--ink-soft); }
+.bar { height: 8px; background: var(--sheet-2); border-radius: 4px; overflow: hidden; margin: 14px 0 8px; }
+.bar > span { display: block; height: 100%; background: var(--blue); border-radius: 4px; }
+
+/* ===== Stats ===== */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+.stat { background: var(--sheet); padding: 14px 16px; }
+.stat .label { font-size: 0.8125rem; color: var(--ink-soft); }
+.stat .value { font-family: var(--serif); font-weight: 600; font-size: 1.25rem; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.stat .sub { font-size: 0.8125rem; color: var(--ink-soft); }
+.stat .value.ahead { color: var(--blue); }
+.stat .value.behind { color: var(--danger); }
+
+/* ===== Calendar: the ink grid ===== */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.dow { text-align: center; font-size: 0.75rem; color: var(--ink-soft); padding-bottom: 2px; }
+.day {
+  aspect-ratio: 1 / 1.1; border-radius: 8px; border: 1px solid var(--rule);
+  background: var(--sheet); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2px; min-width: 0; font-variant-numeric: tabular-nums;
+}
+button.day { cursor: pointer; }
+.day .n { font-size: 0.8125rem; line-height: 1; }
+.day .w { font-size: 0.6875rem; line-height: 1.2; margin-top: 3px; opacity: 0.9; }
+.day.none { background: var(--sheet); }
+.day.partial { background: var(--blue-light); border-color: var(--blue-light); }
+.day.met { background: var(--blue); border-color: var(--blue); color: var(--on-blue); }
+.day.future { background: transparent; border-style: dashed; color: var(--ink-soft); }
+.day.today { box-shadow: 0 0 0 2px var(--gold); }
+.day.selected { outline: 2px solid var(--ink); outline-offset: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; font-size: 0.8125rem; color: var(--ink-soft); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--rule); }
+.legend .l-partial { background: var(--blue-light); border-color: var(--blue-light); }
+.legend .l-met { background: var(--blue); border-color: var(--blue); }
+.legend .l-today { box-shadow: 0 0 0 2px var(--gold); border-color: transparent; }
+
+/* ===== Forms ===== */
+label { display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 6px; }
+input[type=text], input[type=password], input[type=number], select {
+  width: 100%; padding: 12px; border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--paper); font-size: 1rem;
+}
+input:focus, select:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px var(--blue-light); }
+.hint { font-size: 0.8125rem; color: var(--ink-soft); margin-top: 6px; }
+.btn {
+  appearance: none; border: 1px solid var(--blue); background: var(--blue); color: var(--on-blue);
+  padding: 11px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; min-height: 44px;
+}
+.btn.secondary { background: transparent; color: var(--blue); }
+.btn.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn.plain { background: transparent; border-color: transparent; color: var(--blue); padding-left: 0; padding-right: 0; }
+.btn.small { min-height: 36px; padding: 6px 12px; font-size: 0.875rem; }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.seg { display: flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 9px 8px; cursor: pointer; font-size: 0.875rem; }
+.seg button[aria-pressed=true] { background: var(--blue); color: var(--on-blue); font-weight: 700; }
+.error { color: var(--danger); font-size: 0.875rem; }
+
+/* ===== Leaderboard ===== */
+.board { list-style: none; margin: 0; padding: 0; }
+.board li + li { border-top: 1px solid var(--rule); }
+.board button { width: 100%; text-align: left; background: none; border: 0; padding: 12px 0; cursor: pointer; display: grid; grid-template-columns: 28px 1fr auto; gap: 4px 10px; align-items: baseline; }
+.board .rank { font-family: var(--serif); font-weight: 700; color: var(--ink-soft); }
+.board .name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .words { font-family: var(--serif); font-weight: 600; font-variant-numeric: tabular-nums; }
+.board .detail { grid-column: 2 / 4; font-size: 0.8125rem; color: var(--ink-soft); }
+.board .bar { grid-column: 2 / 4; margin: 2px 0 0; height: 5px; }
+.board .me .name::after { content: " (you)"; font-weight: 400; color: var(--ink-soft); }
+
+/* ===== Summary ===== */
+.summary dl { margin: 0; display: grid; grid-template-columns: 1fr; gap: 12px; }
+.summary dt { font-size: 0.8125rem; color: var(--ink-soft); }
+.summary dd { margin: 2px 0 0; font-family: var(--serif); font-weight: 600; }
+
+/* ===== Admin table ===== */
+.entries-list { list-style: none; margin: 0; padding: 0; }
+.entries-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--rule); }
+.entries-list li:first-child { border-top: 0; }
+
+/* ===== Tabs ===== */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  background: var(--sheet); border-top: 1px solid var(--rule);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabs .wrap { display: flex; }
+.tabs button { flex: 1; background: none; border: 0; padding: 14px 4px; cursor: pointer; font-weight: 700; color: var(--ink-soft); border-top: 3px solid transparent; }
+.tabs button[aria-current=page] { color: var(--blue); border-top-color: var(--blue); }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 8px; font-size: 0.9375rem;
+  max-width: calc(100% - 32px); opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.toast.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>November word tracker</h1>
+    <span class="day-badge" id="day-badge"></span>
+  </header>
+  <blockquote class="quote" id="quote"></blockquote>
+  <main id="main"><p class="muted">Loading…</p></main>
+</div>
+<nav class="tabs" id="tabs" hidden><div class="wrap" id="tabs-inner"></div></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ===== Settings: paste your Apps Script web app URL here =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbxtZHKtvlt-42gP2Dnyt9osm_MkIriRe_Q6cOXVCIzDRJRz2qMGubMxao0hrv_VMX3Xow/exec';
+
+// Public-domain quotes. Day 1 of the month shows the first quote, and so on.
+const QUOTES = [
+  ['No day without a line.', 'Pliny the Elder, on the painter Apelles'],
+  ['If you would not be forgotten as soon as you are dead and rotten, either write things worth reading, or do things worth the writing.', 'Benjamin Franklin'],
+  ['The beginning is the most important part of the work.', 'Plato, The Republic'],
+  ['He who has begun has half done. Dare to be wise; begin!', 'Horace'],
+  ['Great things are not done by impulse, but by a series of small things brought together.', 'Vincent van Gogh, letter to Theo'],
+  ['I’m not afraid of storms, for I’m learning how to sail my ship.', 'Louisa May Alcott, Little Women'],
+  ['Begin at the beginning, and go on till you come to the end: then stop.', 'Lewis Carroll, Alice’s Adventures in Wonderland'],
+  ['A journey of a thousand miles begins with a single step.', 'Laozi, Tao Te Ching'],
+  ['Words are, of course, the most powerful drug used by mankind.', 'Rudyard Kipling'],
+  ['What is written without effort is in general read without pleasure.', 'Samuel Johnson'],
+  ['Write while the heat is in you.', 'Henry David Thoreau, journal'],
+  ['Nothing great was ever achieved without enthusiasm.', 'Ralph Waldo Emerson, “Circles”'],
+  ['Our patience will achieve more than our force.', 'Edmund Burke'],
+  ['He that can have patience can have what he will.', 'Benjamin Franklin, Poor Richard’s Almanack'],
+  ['Diligence is the mother of good luck.', 'Benjamin Franklin, Poor Richard’s Almanack'],
+  ['Even a water-pot is filled by the falling of drops.', 'The Dhammapada'],
+  ['Knowing is not enough; we must apply. Willing is not enough; we must do.', 'Johann Wolfgang von Goethe'],
+  ['Habit is habit, and not to be flung out of the window by any man, but coaxed down-stairs a step at a time.', 'Mark Twain, Pudd’nhead Wilson'],
+  ['The pen is mightier than the sword.', 'Edward Bulwer-Lytton, Richelieu'],
+  ['Fill your paper with the breathings of your heart.', 'William Wordsworth'],
+  ['“Hope” is the thing with feathers — that perches in the soul.', 'Emily Dickinson'],
+  ['Fortune favors the bold.', 'Virgil, Aeneid'],
+  ['Our doubts are traitors, and make us lose the good we oft might win, by fearing to attempt.', 'William Shakespeare, Measure for Measure'],
+  ['Slow but steady wins the race.', 'Aesop, The Tortoise and the Hare'],
+  ['Lost time is never found again.', 'Benjamin Franklin, Poor Richard’s Almanack'],
+  ['Begin at once to live, and count each separate day as a separate life.', 'Seneca, Letters'],
+  ['No great thing is created suddenly, any more than a bunch of grapes or a fig.', 'Epictetus, Discourses'],
+  ['How vain it is to sit down to write when you have not stood up to live.', 'Henry David Thoreau, journal'],
+  ['Rome was not built in a day.', 'Proverb'],
+  ['Let us, then, be up and doing, with a heart for any fate.', 'Henry Wadsworth Longfellow, “A Psalm of Life”']
+];
+
+const TOKEN_KEY = 'nano_tracker_token';
+const S = {
+  token: null, info: null, data: null,
+  tab: 'me', viewing: null, sortBy: 'total',
+  authMode: 'login', selectedDate: null,
+  adminUser: null, adminDate: null, busy: false
+};
+
+// ===== Utilities =====
+const $ = sel => document.querySelector(sel);
+const fmt = n => Number(n || 0).toLocaleString('en-US');
+const pad = n => String(n).padStart(2, '0');
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } }
+function setToken(t) {
+  S.token = t;
+  try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+}
+let toastTimer;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ===== API =====
+async function api(action, payload = {}) {
+  let out;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, token: S.token, ...payload }) });
+    out = await res.json();
+  } catch (e) {
+    throw new Error('Couldn’t reach the tracker. Check your connection and try again.');
+  }
+  if (!out.ok) {
+    if (out.code === 'AUTH') { setToken(null); S.data = null; render(); }
+    throw new Error(out.error || 'Request failed.');
+  }
+  return out;
+}
+
+async function run(action, payload, okMessage) {
+  if (S.busy) return;
+  S.busy = true;
+  document.querySelectorAll('button').forEach(b => { b.dataset.wasDisabled = b.disabled; b.disabled = true; });
+  try {
+    const out = await api(action, payload);
+    if (out.token) setToken(out.token); // set before render so login shows "Loading…", not an empty form
+    if (out.users) S.data = out;
+    if (okMessage) toast(okMessage);
+    render();
+    return out;
+  } catch (e) {
+    toast(e.message);
+    document.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.wasDisabled === 'true'; });
+    throw e;
+  } finally {
+    S.busy = false;
+  }
+}
+
+// ===== Dates and stats =====
+function cfg() { return (S.data || S.info).config; }
+function today() { return (S.data || S.info).today; }
+function ds(d) { const c = cfg(); return `${c.year}-${pad(c.month)}-${pad(d)}`; }
+function dayNum() {
+  const c = cfg(), t = today();
+  if (t < c.start) return 0;
+  if (t > c.end) return c.days;
+  return parseInt(t.slice(8, 10), 10);
+}
+function lastLoggableDay() { return dayNum(); }
+function monthEnded() { return today() >= cfg().end; }
+function dateLabel(date) {
+  const d = new Date(date + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function shortWords(w) {
+  if (w >= 1000) return (Math.round(w / 100) / 10).toString().replace(/\.0$/, '') + 'k';
+  return String(w);
+}
+
+function stats(u) {
+  const c = cfg(), dn = dayNum(), t = today();
+  const goal = u.dailyGoal * c.days;
+  let total = 0, daysWritten = 0, bestDay = 0, bestDate = null;
+  for (const [date, w] of Object.entries(u.entries)) {
+    total += w;
+    if (w > 0) daysWritten++;
+    if (w > bestDay) { bestDay = w; bestDate = date; }
+  }
+  const todayWords = (t >= c.start && t <= c.end) ? (u.entries[t] || 0) : 0;
+  const expected = u.dailyGoal * dn;
+  const diff = total - expected;
+  const daysLeft = t < c.start ? c.days : (t > c.end ? 0 : c.days - dn + 1);
+  const remaining = Math.max(0, goal - total);
+  const needed = daysLeft > 0 ? Math.ceil(remaining / daysLeft) : 0;
+
+  let longest = 0, run = 0;
+  for (let d = 1; d <= dn; d++) {
+    if ((u.entries[ds(d)] || 0) > 0) { run++; longest = Math.max(longest, run); } else run = 0;
+  }
+  let current = 0;
+  let d = dn;
+  if (d > 0 && !(u.entries[ds(d)] > 0) && t <= c.end) d--; // today not logged yet keeps the streak alive
+  for (; d >= 1 && (u.entries[ds(d)] || 0) > 0; d--) current++;
+
+  const pct = goal ? Math.floor(total / goal * 100) : 0;
+  return { goal, total, pct, todayWords, expected, diff, daysLeft, remaining, needed, longest, current, daysWritten, bestDay, bestDate };
+}
+
+function users() { return S.data.users; }
+function findUser(name) { return users().find(u => u.username === name); }
+function meUser() { return findUser(S.data.me.username); }
+
+// ===== Render: shell =====
+function render() {
+  renderHeader();
+  if (!API_URL || API_URL.startsWith('PASTE_')) {
+    $('#main').innerHTML = `<section class="card"><h2>Setup needed</h2><p>Open index.html and paste your Apps Script web app URL into API_URL.</p></section>`;
+    $('#tabs').hidden = true;
+    return;
+  }
+  if (!S.token || !S.data) {
+    $('#tabs').hidden = true;
+    $('#main').innerHTML = S.token ? '<p class="muted">Loading…</p>' : authHTML();
+    return;
+  }
+  $('#tabs').hidden = false;
+  renderTabs();
+  let html = '';
+  if (S.viewing) html = personHTML();
+  else if (S.tab === 'me') html = meHTML();
+  else if (S.tab === 'group') html = groupHTML();
+  else if (S.tab === 'admin' && S.data.me.isAdmin) html = adminHTML();
+  else html = meHTML();
+  $('#main').innerHTML = html;
+}
+
+function renderHeader() {
+  const src = S.data || S.info;
+  if (!src) return;
+  const c = src.config, t = src.today, dn = dayNum();
+  $('#day-badge').textContent = t < c.start ? 'Starts Nov 1' : (t > c.end ? 'Finished' : `Day ${dn} of ${c.days}`);
+  const q = QUOTES[(parseInt(t.slice(8, 10), 10) - 1) % QUOTES.length];
+  $('#quote').innerHTML = `<p>${esc(q[0])}</p><cite>${esc(q[1])}</cite>`;
+}
+
+function renderTabs() {
+  const tabs = [['me', 'My progress'], ['group', 'Group']];
+  if (S.data.me.isAdmin) tabs.push(['admin', 'Admin']);
+  $('#tabs-inner').innerHTML = tabs.map(([id, label]) =>
+    `<button data-action="tab" data-tab="${id}" ${S.tab === id && !S.viewing ? 'aria-current="page"' : ''}>${label}</button>`
+  ).join('');
+}
+
+// ===== Render: auth =====
+function authHTML() {
+  const open = S.info && S.info.config.registrationOpen;
+  const mode = open ? S.authMode : 'login';
+  const seg = open ? `
+    <div class="seg" role="group" aria-label="Log in or create account" style="margin-bottom:16px">
+      <button type="button" data-action="auth-mode" data-mode="login" aria-pressed="${mode === 'login'}">Log in</button>
+      <button type="button" data-action="auth-mode" data-mode="register" aria-pressed="${mode === 'register'}">Create account</button>
+    </div>` : '';
+  if (mode === 'login') {
+    return `<section class="card">${seg}
+      <form id="login-form" class="stack">
+        <div><label for="li-user">Username</label><input id="li-user" type="text" autocomplete="username" required></div>
+        <div><label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password" required></div>
+        <button class="btn block" type="submit">Log in</button>
+        ${open ? '' : '<p class="hint">Registration is closed.</p>'}
+      </form></section>`;
+  }
+  const max = S.info.config.maxDailyGoal;
+  return `<section class="card">${seg}
+    <form id="register-form" class="stack">
+      <div><label for="rg-user">Username</label><input id="rg-user" type="text" autocomplete="username" maxlength="20" required>
+        <p class="hint">This is the name your friends will see.</p></div>
+      <div><label for="rg-pass">Password</label><input id="rg-pass" type="password" autocomplete="new-password" minlength="6" required>
+        <p class="hint">At least 6 characters. Don’t reuse a password from another site.</p></div>
+      <div><label for="rg-goal">Daily word goal</label><input id="rg-goal" type="number" inputmode="numeric" min="1" max="${max}" step="1" required>
+        <p class="hint" id="rg-month">Your goal can’t be changed after you register.</p></div>
+      <div><label for="rg-title">Project title (optional)</label><input id="rg-title" type="text" maxlength="80"></div>
+      <button class="btn block" type="submit">Create account</button>
+    </form></section>`;
+}
+
+// ===== Render: dashboards =====
+function dashboardHTML(u, editable) {
+  const st = stats(u), dn = dayNum();
+  let pace;
+  if (dn === 0) pace = '<div class="value">Not started</div>';
+  else if (st.diff > 0) pace = `<div class="value ahead">${fmt(st.diff)} ahead</div>`;
+  else if (st.diff < 0) pace = `<div class="value behind">${fmt(-st.diff)} behind</div>`;
+  else pace = '<div class="value">On pace</div>';
+
+  let needed;
+  if (st.remaining === 0) needed = '<div class="value ahead">Goal met</div>';
+  else if (st.daysLeft === 0) needed = `<div class="value">—</div><div class="sub">${fmt(st.remaining)} short</div>`;
+  else needed = `<div class="value">${fmt(st.needed)}</div><div class="sub">for ${st.daysLeft} day${st.daysLeft === 1 ? '' : 's'}</div>`;
+
+  return `
+  <section class="card hero">
+    <div class="row between who">
+      <div>
+        <h2>${esc(u.username)}</h2>
+        ${u.projectTitle ? `<p class="project">${esc(u.projectTitle)}</p>` : ''}
+      </div>
+      ${editable ? '<button class="btn secondary small" data-action="share-me">Share</button>' : ''}
+    </div>
+    <div class="total"><span class="big">${fmt(st.total)}</span><span class="of">of ${fmt(st.goal)} words</span></div>
+    <div class="bar"><span style="width:${Math.min(100, st.pct)}%"></span></div>
+    <p class="muted small">${st.pct}% of monthly goal. Daily goal: ${fmt(u.dailyGoal)}.</p>
+  </section>
+  <section class="stats">
+    <div class="stat"><div class="label">Today</div><div class="value">${fmt(st.todayWords)}</div><div class="sub">of ${fmt(u.dailyGoal)}</div></div>
+    <div class="stat"><div class="label">Pace</div>${pace}<div class="sub">${dn ? `target ${fmt(st.expected)} by today` : '&nbsp;'}</div></div>
+    <div class="stat"><div class="label">Needed per day</div>${needed}</div>
+    <div class="stat"><div class="label">Streak</div><div class="value">${st.current} day${st.current === 1 ? '' : 's'}</div><div class="sub">longest ${st.longest}</div></div>
+  </section>
+  <section class="card">
+    <h2>November</h2>
+    ${calendarHTML(u, editable)}
+  </section>`;
+}
+
+function calendarHTML(u, editable) {
+  const c = cfg(), t = today();
+  const first = new Date(c.year, c.month - 1, 1).getDay();
+  let cells = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => `<div class="dow" aria-hidden="true">${d.slice(0, 1)}</div>`).join('');
+  for (let i = 0; i < first; i++) cells += '<div></div>';
+  for (let d = 1; d <= c.days; d++) {
+    const date = ds(d), w = u.entries[date] || 0;
+    let cls = date > t ? 'future' : (w >= u.dailyGoal ? 'met' : (w > 0 ? 'partial' : 'none'));
+    if (date === t) cls += ' today';
+    if (editable && date === S.selectedDate) cls += ' selected';
+    const label = `${dateLabel(date)}: ${w ? fmt(w) + ' words' : 'no words'}`;
+    const inner = `<span class="n">${d}</span>${w ? `<span class="w">${shortWords(w)}</span>` : ''}`;
+    if (editable && date <= t) {
+      cells += `<button class="day ${cls}" data-action="pick-date" data-date="${date}" aria-label="${esc(label)}">${inner}</button>`;
+    } else {
+      cells += `<div class="day ${cls}" aria-label="${esc(label)}">${inner}</div>`;
+    }
+  }
+  return `<div class="cal">${cells}</div>
+    <div class="legend"><span><i class="l-met"></i>Goal met</span><span><i class="l-partial"></i>Wrote</span><span><i></i>No words</span><span><i class="l-today"></i>Today</span></div>
+    ${editable ? '<p class="hint">Tap a day to log or change its count.</p>' : ''}`;
+}
+
+function entryHTML(u) {
+  const last = lastLoggableDay();
+  if (last === 0) {
+    return `<section class="card" id="entry-card"><h2>Log words</h2><p class="muted">Logging opens November 1.</p></section>`;
+  }
+  if (!S.selectedDate || S.selectedDate > ds(last)) S.selectedDate = ds(last);
+  const existing = u.entries[S.selectedDate] || 0;
+  let options = '';
+  for (let d = last; d >= 1; d--) {
+    const date = ds(d);
+    options += `<option value="${date}" ${date === S.selectedDate ? 'selected' : ''}>${dateLabel(date)}${date === today() ? ' (today)' : ''}</option>`;
+  }
+  return `<section class="card" id="entry-card">
+    <h2>Log words</h2>
+    <form id="entry-form" class="stack">
+      <div><label for="en-date">Day</label><select id="en-date">${options}</select></div>
+      <div><label for="en-words">Words written that day</label>
+        <input id="en-words" type="number" inputmode="numeric" min="0" max="${cfg().maxDailyWords}" step="1" value="${existing || ''}" placeholder="0" required>
+        <p class="hint">${existing ? `Currently logged: ${fmt(existing)}. Saving replaces this number.` : 'Nothing logged for this day yet.'}</p></div>
+      <div class="row">
+        <button class="btn" type="submit">${existing ? 'Update' : 'Save'}</button>
+        ${existing ? '<button class="btn danger" type="button" data-action="delete-entry">Delete</button>' : ''}
+      </div>
+    </form>
+  </section>`;
+}
+
+function meHTML() {
+  const u = meUser();
+  if (!u) return '<p class="muted">Account not found.</p>';
+  return `${dashboardHTML(u, true)}
+    ${entryHTML(u)}
+    <section class="card">
+      <h2>Project</h2>
+      <form id="profile-form" class="stack">
+        <div><label for="pf-title">Project title</label><input id="pf-title" type="text" maxlength="80" value="${esc(u.projectTitle)}"></div>
+        <button class="btn secondary" type="submit">Save title</button>
+      </form>
+    </section>
+    <button class="btn plain" data-action="logout">Log out</button>`;
+}
+
+function personHTML() {
+  const u = findUser(S.viewing);
+  if (!u) { S.viewing = null; return groupHTML(); }
+  return `<button class="btn plain" data-action="back">Back to group</button>${dashboardHTML(u, false)}`;
+}
+
+// ===== Render: group =====
+function groupStats() {
+  const list = users().map(u => ({ u, st: stats(u) }));
+  const total = list.reduce((a, x) => a + x.st.total, 0);
+  const goal = list.reduce((a, x) => a + x.st.goal, 0);
+  const todayWords = list.reduce((a, x) => a + x.st.todayWords, 0);
+  return { list, total, goal, todayWords, pct: goal ? Math.floor(total / goal * 100) : 0 };
+}
+
+function sortedList(list) {
+  const key = S.sortBy === 'pct' ? (x => x.st.total / (x.st.goal || 1)) : (x => x.st.total);
+  return list.slice().sort((a, b) => key(b) - key(a) || a.u.username.localeCompare(b.u.username));
+}
+
+function groupHTML() {
+  const g = groupStats();
+  const me = S.data.me.username;
+  const rows = sortedList(g.list).map((x, i) => `
+    <li><button data-action="view" data-user="${esc(x.u.username)}" class="${x.u.username === me ? 'me' : ''}">
+      <span class="rank">${i + 1}</span>
+      <span class="name">${esc(x.u.username)}</span>
+      <span class="words">${fmt(x.st.total)}</span>
+      <span class="bar"><span style="width:${Math.min(100, x.st.pct)}%"></span></span>
+      <span class="detail">${x.st.pct}% of ${fmt(x.st.goal)}. Streak ${x.st.current}. Today ${fmt(x.st.todayWords)}.</span>
+    </button></li>`).join('');
+
+  return `${monthEnded() ? summaryHTML(g) : ''}
+  <section class="card hero">
+    <div class="row between who"><h2>Group</h2><button class="btn secondary small" data-action="share-group">Share</button></div>
+    <div class="total"><span class="big">${fmt(g.total)}</span><span class="of">of ${fmt(g.goal)} words</span></div>
+    <div class="bar"><span style="width:${Math.min(100, g.pct)}%"></span></div>
+    <p class="muted small">${g.pct}% of the combined goal. ${g.list.length} writer${g.list.length === 1 ? '' : 's'}. ${fmt(g.todayWords)} words today.</p>
+  </section>
+  <section class="card">
+    <div class="row between" style="margin-bottom:8px"><h2 style="margin:0">Leaderboard</h2></div>
+    <div class="seg" role="group" aria-label="Sort leaderboard" style="margin-bottom:6px">
+      <button data-action="sort" data-sort="total" aria-pressed="${S.sortBy === 'total'}">Total words</button>
+      <button data-action="sort" data-sort="pct" aria-pressed="${S.sortBy === 'pct'}">% of goal</button>
+    </div>
+    ${g.list.length ? `<ol class="board">${rows}</ol>` : '<p class="muted">No one has registered yet.</p>'}
+    <p class="hint">Tap a name to see their progress.</p>
+  </section>`;
+}
+
+function summaryHTML(g) {
+  if (!g.list.length) return '';
+  const met = g.list.filter(x => x.st.goal && x.st.total >= x.st.goal).map(x => x.u.username);
+  const streak = g.list.slice().sort((a, b) => b.st.longest - a.st.longest)[0];
+  const days = g.list.slice().sort((a, b) => b.st.daysWritten - a.st.daysWritten)[0];
+  const best = g.list.slice().sort((a, b) => b.st.bestDay - a.st.bestDay)[0];
+  return `<section class="card summary">
+    <h2>November summary</h2>
+    <dl>
+      <div><dt>Group total</dt><dd>${fmt(g.total)} words (${g.pct}% of the combined goal)</dd></div>
+      <div><dt>Reached their goal</dt><dd>${met.length ? met.map(esc).join(', ') : 'No one'}</dd></div>
+      <div><dt>Longest streak</dt><dd>${streak.st.longest ? `${esc(streak.u.username)}, ${streak.st.longest} days` : 'None'}</dd></div>
+      <div><dt>Most days written</dt><dd>${days.st.daysWritten ? `${esc(days.u.username)}, ${days.st.daysWritten} days` : 'None'}</dd></div>
+      <div><dt>Best single day</dt><dd>${best.st.bestDay ? `${esc(best.u.username)}, ${fmt(best.st.bestDay)} words on ${dateLabel(best.st.bestDate)}` : 'None'}</dd></div>
+    </dl>
+  </section>`;
+}
+
+// ===== Render: admin =====
+function adminHTML() {
+  const list = users().slice().sort((a, b) => a.username.localeCompare(b.username));
+  if (!list.length) return '<section class="card"><h2>Admin</h2><p class="muted">No users yet.</p></section>';
+  if (!S.adminUser || !findUser(S.adminUser)) S.adminUser = list[0].username;
+  const u = findUser(S.adminUser);
+  const isSelf = u.username === S.data.me.username;
+  const last = lastLoggableDay();
+  if (!S.adminDate || S.adminDate > ds(Math.max(last, 1))) S.adminDate = ds(Math.max(last, 1));
+
+  const entries = Object.entries(u.entries).sort((a, b) => a[0].localeCompare(b[0]));
+  const entryRows = entries.length ? entries.map(([date, w]) => `
+    <li><span>${dateLabel(date)}: <strong>${fmt(w)}</strong></span>
+      <span class="row"><button class="btn secondary small" data-action="admin-edit" data-date="${date}">Edit</button>
+      <button class="btn danger small" data-action="admin-delete" data-date="${date}">Delete</button></span></li>`).join('')
+    : '<li class="muted">No entries.</li>';
+
+  let dateOptions = '';
+  for (let d = last; d >= 1; d--) {
+    const date = ds(d);
+    dateOptions += `<option value="${date}" ${date === S.adminDate ? 'selected' : ''}>${dateLabel(date)}</option>`;
+  }
+
+  return `<section class="card">
+      <h2>Admin</h2>
+      <label for="ad-user">User</label>
+      <select id="ad-user">${list.map(x => `<option value="${esc(x.username)}" ${x.username === u.username ? 'selected' : ''}>${esc(x.username)}</option>`).join('')}</select>
+      <p class="hint">Daily goal ${fmt(u.dailyGoal)}. ${u.projectTitle ? 'Project: ' + esc(u.projectTitle) + '.' : ''}</p>
+    </section>
+    <section class="card">
+      <h2>Entries</h2>
+      <ul class="entries-list">${entryRows}</ul>
+    </section>
+    <section class="card">
+      <h2>Add or change an entry</h2>
+      ${last === 0 ? '<p class="muted">Entries open November 1.</p>' : `
+      <form id="admin-entry-form" class="stack">
+        <div><label for="ad-date">Day</label><select id="ad-date">${dateOptions}</select></div>
+        <div><label for="ad-words">Words</label><input id="ad-words" type="number" inputmode="numeric" min="0" max="${cfg().maxDailyWords}" step="1" value="${u.entries[S.adminDate] || ''}" required></div>
+        <button class="btn" type="submit">Save entry</button>
+      </form>`}
+    </section>
+    <section class="card">
+      <h2>Reset password</h2>
+      <form id="admin-reset-form" class="stack">
+        <div><label for="ad-pass">New password for ${esc(u.username)}</label><input id="ad-pass" type="text" minlength="6" autocomplete="off" required>
+          <p class="hint">This logs them out on every device. Send them the new password directly.</p></div>
+        <button class="btn secondary" type="submit">Reset password</button>
+      </form>
+    </section>
+    ${isSelf ? '' : `<section class="card">
+      <h2>Remove user</h2>
+      <p class="muted small" style="margin-bottom:12px">Deletes ${esc(u.username)}’s account and all their entries. This can’t be undone.</p>
+      <button class="btn danger" data-action="admin-remove">Remove ${esc(u.username)}</button>
+    </section>`}`;
+}
+
+// ===== Share =====
+function shareMeText() {
+  const u = meUser(), st = stats(u), c = cfg(), dn = dayNum();
+  const pace = dn === 0 ? 'Not started' : (st.diff > 0 ? `${fmt(st.diff)} ahead` : st.diff < 0 ? `${fmt(-st.diff)} behind` : 'On pace');
+  return [
+    `${u.username}: day ${dn} of ${c.days}`,
+    u.projectTitle ? `Project: ${u.projectTitle}` : null,
+    `Total: ${fmt(st.total)} / ${fmt(st.goal)} (${st.pct}%)`,
+    `Today: ${fmt(st.todayWords)} / ${fmt(u.dailyGoal)}`,
+    `Pace: ${pace}`,
+    `Streak: ${st.current} day${st.current === 1 ? '' : 's'}`
+  ].filter(Boolean).join('\n');
+}
+
+function shareGroupText() {
+  const g = groupStats(), c = cfg();
+  const lines = sortedList(g.list).map((x, i) =>
+    `${i + 1}. ${x.u.username}: ${fmt(x.st.total)} (${x.st.pct}%), streak ${x.st.current}`);
+  return [`Group: day ${dayNum()} of ${c.days}`, `Total: ${fmt(g.total)} / ${fmt(g.goal)} (${g.pct}%)`, '', ...lines, '', location.href.split('#')[0]].join('\n');
+}
+
+async function share(text) {
+  if (navigator.share) {
+    try { await navigator.share({ text }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Copied. Paste it into WhatsApp.');
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('Copied. Paste it into WhatsApp.'); } catch (_) { toast('Couldn’t copy. Try again.'); }
+    ta.remove();
+  }
+}
+
+// ===== Events =====
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-action]');
+  if (!el || el.disabled) return;
+  const a = el.dataset.action;
+  try {
+    if (a === 'tab') { S.tab = el.dataset.tab; S.viewing = null; render(); window.scrollTo(0, 0); }
+    else if (a === 'auth-mode') { S.authMode = el.dataset.mode; render(); }
+    else if (a === 'view') {
+      if (el.dataset.user === S.data.me.username) { S.tab = 'me'; S.viewing = null; }
+      else S.viewing = el.dataset.user;
+      render(); window.scrollTo(0, 0);
+    }
+    else if (a === 'back') { S.viewing = null; S.tab = 'group'; render(); }
+    else if (a === 'sort') { S.sortBy = el.dataset.sort; render(); }
+    else if (a === 'pick-date') {
+      S.selectedDate = el.dataset.date; render();
+      const card = $('#entry-card'); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const input = $('#en-words'); if (input) input.focus({ preventScroll: true });
+    }
+    else if (a === 'delete-entry') {
+      if (!confirm(`Delete your entry for ${dateLabel(S.selectedDate)}?`)) return;
+      await run('deleteEntry', { date: S.selectedDate }, 'Entry deleted.');
+    }
+    else if (a === 'share-me') share(shareMeText());
+    else if (a === 'share-group') share(shareGroupText());
+    else if (a === 'logout') {
+      try { await api('logout'); } catch (_) {}
+      setToken(null); S.data = null; S.tab = 'me'; S.viewing = null; render();
+    }
+    else if (a === 'admin-edit') { S.adminDate = el.dataset.date; render(); $('#ad-words') && $('#ad-words').focus(); }
+    else if (a === 'admin-delete') {
+      if (!confirm(`Delete ${S.adminUser}’s entry for ${dateLabel(el.dataset.date)}?`)) return;
+      await run('adminDeleteEntry', { username: S.adminUser, date: el.dataset.date }, 'Entry deleted.');
+    }
+    else if (a === 'admin-remove') {
+      if (!confirm(`Remove ${S.adminUser} and all their entries? This can’t be undone.`)) return;
+      await run('adminRemoveUser', { username: S.adminUser }, 'User removed.');
+      S.adminUser = null; render();
+    }
+  } catch (_) { /* error already shown */ }
+});
+
+document.addEventListener('change', e => {
+  const id = e.target.id;
+  if (id === 'en-date') { S.selectedDate = e.target.value; render(); }
+  else if (id === 'ad-user') { S.adminUser = e.target.value; render(); }
+  else if (id === 'ad-date') { S.adminDate = e.target.value; render(); }
+});
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'rg-goal') {
+    const n = parseInt(e.target.value, 10);
+    const days = S.info.config.days;
+    $('#rg-month').textContent = n > 0
+      ? `Monthly goal: ${fmt(n * days)} words. Your goal can’t be changed after you register.`
+      : 'Your goal can’t be changed after you register.';
+  }
+});
+
+document.addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = e.target.id;
+  try {
+    if (id === 'login-form') {
+      await run('login', { username: $('#li-user').value, password: $('#li-pass').value });
+      await loadState();
+    }
+    else if (id === 'register-form') {
+      await run('register', {
+        username: $('#rg-user').value, password: $('#rg-pass').value,
+        dailyGoal: Number($('#rg-goal').value), projectTitle: $('#rg-title').value
+      });
+      await loadState();
+    }
+    else if (id === 'entry-form') {
+      const words = Number($('#en-words').value);
+      await run('saveEntry', { date: S.selectedDate, words }, 'Saved.');
+    }
+    else if (id === 'profile-form') {
+      await run('updateProfile', { projectTitle: $('#pf-title').value }, 'Title saved.');
+    }
+    else if (id === 'admin-entry-form') {
+      await run('adminSaveEntry', { username: S.adminUser, date: S.adminDate, words: Number($('#ad-words').value) }, 'Entry saved.');
+    }
+    else if (id === 'admin-reset-form') {
+      await run('adminResetPassword', { username: S.adminUser, newPassword: $('#ad-pass').value }, 'Password reset.');
+    }
+  } catch (_) { /* error already shown */ }
+});
+
+// ===== Start =====
+async function loadState(background) {
+  try {
+    S.data = await api('state');
+  } catch (e) {
+    if (S.token) toast(e.message);
+  }
+  if (background && isEditing()) return; // keep what they're typing; the next render picks up the new data
+  render();
+}
+
+// True if a field has focus or holds text that hasn't been saved.
+function isEditing() {
+  const fields = [...document.querySelectorAll('#main input')];
+  return fields.includes(document.activeElement) || fields.some(el => el.value !== el.defaultValue);
+}
+
+async function init() {
+  if (!API_URL || API_URL.startsWith('PASTE_')) { render(); return; }
+  S.token = getToken();
+  try {
+    S.info = await api('info');
+  } catch (e) {
+    $('#main').innerHTML = `<section class="card"><p class="error">${esc(e.message)}</p></section>`;
+    return;
+  }
+  if (S.token) { render(); await loadState(); } else render();
+}
+
+// Refresh when the page comes back into view, so numbers stay current.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && S.token && S.data && !S.busy) loadState(true);
+});
+
+init();
+</script>
+</body>
+</html>
