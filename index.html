@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>November word tracker</title>
+<title>November Word Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
@@ -46,7 +46,7 @@
 
 /* ===== Base ===== */
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); } /* keep focused fields clear of the tab bar */
 body {
   margin: 0;
   background: var(--paper);
@@ -85,6 +85,18 @@ p { margin: 0; }
 .total .of { color: var(--ink-soft); }
 .bar { height: 8px; background: var(--sheet-2); border-radius: 4px; overflow: hidden; margin: 14px 0 8px; }
 .bar > span { display: block; height: 100%; background: var(--blue); border-radius: 4px; }
+.bar.gold > span { background: var(--gold); }
+
+/* ===== Today (inside the hero) ===== */
+.hero-today { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.hero-today .bar { height: 6px; margin: 8px 0 0; }
+.hero-today .count { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.hero-today .count strong { color: var(--ink); }
+.hero-today label { margin-top: 14px; }
+.quick { display: flex; gap: 10px; }
+.quick input { flex: 1; min-width: 0; height: 48px; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.quick .btn { min-width: 96px; min-height: 48px; font-size: 1.0625rem; }
+.field-error { color: var(--danger); font-size: 0.875rem; margin-top: 6px; }
 
 /* ===== Stats ===== */
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
@@ -93,7 +105,10 @@ p { margin: 0; }
 .stat .value { font-family: var(--serif); font-weight: 600; font-size: 1.25rem; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .stat .sub { font-size: 0.8125rem; color: var(--ink-soft); }
 .stat .value.ahead { color: var(--blue); }
-.stat .value.behind { color: var(--danger); }
+.stats.three { grid-template-columns: repeat(3, 1fr); }
+.stats.three .stat { padding: 12px; }
+.stats.three .value { font-size: 1.125rem; }
+@media (max-width: 359px) { .stats.three .stat { padding: 10px 8px; } .stats.three .label { font-size: 0.75rem; } }
 
 /* ===== Calendar: the ink grid ===== */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
@@ -117,6 +132,8 @@ button.day { cursor: pointer; }
 .legend .l-partial { background: var(--blue-light); border-color: var(--blue-light); }
 .legend .l-met { background: var(--blue); border-color: var(--blue); }
 .legend .l-today { box-shadow: 0 0 0 2px var(--gold); border-color: transparent; }
+.day-editor { margin-top: 14px; padding: 14px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.day-editor input[type=text] { background: var(--sheet); }
 
 /* ===== Forms ===== */
 label { display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 6px; }
@@ -174,18 +191,24 @@ input:focus, select:focus { border-color: var(--blue); outline: none; box-shadow
 
 /* ===== Toast ===== */
 .toast {
-  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  position: fixed; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: calc(86px + env(safe-area-inset-bottom, 0px));
   background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 8px; font-size: 0.9375rem;
-  max-width: calc(100% - 32px); opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  max-width: calc(100% - 32px); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.2s, visibility 0.2s;
+  display: flex; align-items: center; gap: 14px;
 }
-.toast.show { opacity: 1; }
+.toast.show { opacity: 1; visibility: visible; }
+.toast.show.has-action { pointer-events: auto; }
+.toast button {
+  background: none; border: 0; color: var(--blue-light); font-weight: 700; min-height: 44px; padding: 0 4px;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;
+}
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>November word tracker</h1>
+    <h1>November Word Tracker</h1>
     <span class="day-badge" id="day-badge"></span>
   </header>
   <blockquote class="quote" id="quote"></blockquote>
@@ -236,7 +259,7 @@ const TOKEN_KEY = 'nano_tracker_token';
 const S = {
   token: null, info: null, data: null,
   tab: 'me', viewing: null, sortBy: 'total',
-  authMode: 'login', selectedDate: null,
+  authMode: 'login', editDate: null,
   adminUser: null, adminDate: null, busy: false
 };
 
@@ -252,14 +275,25 @@ function setToken(t) {
   S.token = t;
   try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {}
 }
-let toastTimer;
-function toast(msg) {
-  const el = $('#toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+// Accepts "1,200", "1 200" or "1200". Returns NaN for anything that isn't a whole number.
+function parseWords(v) {
+  const s = String(v || '').replace(/[,\s]/g, '');
+  return /^\d+$/.test(s) ? Number(s) : NaN;
 }
+
+// action is optional: { label, onClick }. A toast with an action stays longer and pauses while hovered or focused.
+let toastTimer;
+function toast(msg, action) {
+  const el = $('#toast');
+  el.innerHTML = `<span>${esc(msg)}</span>${action ? `<button type="button">${esc(action.label)}</button>` : ''}`;
+  if (action) el.querySelector('button').addEventListener('click', () => { hideToast(); action.onClick(); });
+  el.classList.toggle('has-action', !!action);
+  el.dataset.ms = action ? 6000 : 2800;
+  el.classList.add('show');
+  armToast();
+}
+function armToast() { clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, Number($('#toast').dataset.ms)); }
+function hideToast() { clearTimeout(toastTimer); $('#toast').classList.remove('show'); }
 
 // ===== API =====
 async function api(action, payload = {}) {
@@ -328,8 +362,6 @@ function stats(u) {
     if (w > bestDay) { bestDay = w; bestDate = date; }
   }
   const todayWords = (t >= c.start && t <= c.end) ? (u.entries[t] || 0) : 0;
-  const expected = u.dailyGoal * dn;
-  const diff = total - expected;
   const daysLeft = t < c.start ? c.days : (t > c.end ? 0 : c.days - dn + 1);
   const remaining = Math.max(0, goal - total);
   const needed = daysLeft > 0 ? Math.ceil(remaining / daysLeft) : 0;
@@ -344,8 +376,21 @@ function stats(u) {
   for (; d >= 1 && (u.entries[ds(d)] || 0) > 0; d--) current++;
 
   const pct = goal ? Math.floor(total / goal * 100) : 0;
-  return { goal, total, pct, todayWords, expected, diff, daysLeft, remaining, needed, longest, current, daysWritten, bestDay, bestDate };
+  return { goal, total, pct, todayWords, daysLeft, remaining, needed, longest, current, daysWritten, bestDay, bestDate };
 }
+
+// Pace is about today only: words left to reach today's goal, or how far past it.
+function paceToday(u, st) {
+  const c = cfg(), t = today();
+  if (t < c.start) return { value: '—', sub: 'starts Nov 1', share: 'Not started' };
+  if (t > c.end) return { value: '—', sub: 'November’s done', share: null };
+  const over = st.todayWords - u.dailyGoal;
+  if (over > 0) return { value: '+' + fmt(over), sub: 'over goal', cls: 'ahead', share: `+${fmt(over)} over today’s goal` };
+  if (over === 0) return { value: 'Done', sub: 'goal met', cls: 'ahead', share: 'today’s goal met' };
+  return { value: fmt(-over), sub: 'to go today', share: `${fmt(-over)} to go today` };
+}
+
+const words = n => `${fmt(n)} word${n === 1 ? '' : 's'}`;
 
 function users() { return S.data.users; }
 function findUser(name) { return users().find(u => u.username === name); }
@@ -426,13 +471,7 @@ function authHTML() {
 
 // ===== Render: dashboards =====
 function dashboardHTML(u, editable) {
-  const st = stats(u), dn = dayNum();
-  let pace;
-  if (dn === 0) pace = '<div class="value">Not started</div>';
-  else if (st.diff > 0) pace = `<div class="value ahead">${fmt(st.diff)} ahead</div>`;
-  else if (st.diff < 0) pace = `<div class="value behind">${fmt(-st.diff)} behind</div>`;
-  else pace = '<div class="value">On pace</div>';
-
+  const st = stats(u), pace = paceToday(u, st);
   let needed;
   if (st.remaining === 0) needed = '<div class="value ahead">Goal met</div>';
   else if (st.daysLeft === 0) needed = `<div class="value">—</div><div class="sub">${fmt(st.remaining)} short</div>`;
@@ -450,17 +489,38 @@ function dashboardHTML(u, editable) {
     <div class="total"><span class="big">${fmt(st.total)}</span><span class="of">of ${fmt(st.goal)} words</span></div>
     <div class="bar"><span style="width:${Math.min(100, st.pct)}%"></span></div>
     <p class="muted small">${st.pct}% of monthly goal. Daily goal: ${fmt(u.dailyGoal)}.</p>
+    ${todayHTML(u, st, editable)}
   </section>
-  <section class="stats">
-    <div class="stat"><div class="label">Today</div><div class="value">${fmt(st.todayWords)}</div><div class="sub">of ${fmt(u.dailyGoal)}</div></div>
-    <div class="stat"><div class="label">Pace</div>${pace}<div class="sub">${dn ? `target ${fmt(st.expected)} by today` : '&nbsp;'}</div></div>
-    <div class="stat"><div class="label">Needed per day</div>${needed}</div>
+  <section class="stats three">
+    <div class="stat"><div class="label">Pace</div><div class="value ${pace.cls || ''}">${pace.value}</div><div class="sub">${pace.sub}</div></div>
+    <div class="stat"><div class="label">Needed / day</div>${needed}</div>
     <div class="stat"><div class="label">Streak</div><div class="value">${st.current} day${st.current === 1 ? '' : 's'}</div><div class="sub">longest ${st.longest}</div></div>
   </section>
   <section class="card">
     <h2>November</h2>
     ${calendarHTML(u, editable)}
   </section>`;
+}
+
+// Today's progress inside the hero card. On your own dashboard it includes the Add box.
+function todayHTML(u, st, editable) {
+  const c = cfg(), t = today();
+  if (t > c.end) return '';
+  if (t < c.start) return editable ? '<div class="hero-today"><p class="muted">Logging opens November 1.</p></div>' : '';
+  const met = u.dailyGoal > 0 && st.todayWords >= u.dailyGoal;
+  const pct = u.dailyGoal ? Math.min(100, st.todayWords / u.dailyGoal * 100) : 0;
+  return `<div class="hero-today">
+    <div class="row between"><strong>${met ? 'Goal met' : 'Today'}</strong><span class="count"><strong>${fmt(st.todayWords)}</strong> of ${fmt(u.dailyGoal)}</span></div>
+    <div class="bar${met ? ' gold' : ''}" aria-hidden="true"><span style="width:${pct}%"></span></div>
+    ${editable ? `<form id="add-form" novalidate>
+      <label for="add-words">Words this session</label>
+      <div class="quick">
+        <input id="add-words" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-describedby="add-error">
+        <button class="btn" type="submit">Add</button>
+      </div>
+      <p class="field-error" id="add-error" hidden></p>
+    </form>` : ''}
+  </div>`;
 }
 
 function calendarHTML(u, editable) {
@@ -472,42 +532,36 @@ function calendarHTML(u, editable) {
     const date = ds(d), w = u.entries[date] || 0;
     let cls = date > t ? 'future' : (w >= u.dailyGoal ? 'met' : (w > 0 ? 'partial' : 'none'));
     if (date === t) cls += ' today';
-    if (editable && date === S.selectedDate) cls += ' selected';
-    const label = `${dateLabel(date)}: ${w ? fmt(w) + ' words' : 'no words'}`;
+    if (editable && date === S.editDate) cls += ' selected';
+    const label = `${dateLabel(date)}: ${w ? words(w) : 'no words'}`;
     const inner = `<span class="n">${d}</span>${w ? `<span class="w">${shortWords(w)}</span>` : ''}`;
     if (editable && date <= t) {
-      cells += `<button class="day ${cls}" data-action="pick-date" data-date="${date}" aria-label="${esc(label)}">${inner}</button>`;
+      cells += `<button class="day ${cls}" data-action="pick-date" data-date="${date}" aria-label="${esc(label)}" aria-expanded="${date === S.editDate}" aria-controls="day-editor">${inner}</button>`;
     } else {
       cells += `<div class="day ${cls}" aria-label="${esc(label)}">${inner}</div>`;
     }
   }
+  let below = '';
+  if (editable && S.editDate) below = dayEditorHTML(u);
+  else if (editable && dayNum() > 0) below = '<p class="hint">Tap a day to fix its count.</p>';
   return `<div class="cal">${cells}</div>
     <div class="legend"><span><i class="l-met"></i>Goal met</span><span><i class="l-partial"></i>Wrote</span><span><i></i>No words</span><span><i class="l-today"></i>Today</span></div>
-    ${editable ? '<p class="hint">Tap a day to log or change its count.</p>' : ''}`;
+    ${below}`;
 }
 
-function entryHTML(u) {
-  const last = lastLoggableDay();
-  if (last === 0) {
-    return `<section class="card" id="entry-card"><h2>Log words</h2><p class="muted">Logging opens November 1.</p></section>`;
-  }
-  if (!S.selectedDate || S.selectedDate > ds(last)) S.selectedDate = ds(last);
-  const existing = u.entries[S.selectedDate] || 0;
-  let options = '';
-  for (let d = last; d >= 1; d--) {
-    const date = ds(d);
-    options += `<option value="${date}" ${date === S.selectedDate ? 'selected' : ''}>${dateLabel(date)}${date === today() ? ' (today)' : ''}</option>`;
-  }
-  return `<section class="card" id="entry-card">
-    <h2>Log words</h2>
-    <form id="entry-form" class="stack">
-      <div><label for="en-date">Day</label><select id="en-date">${options}</select></div>
-      <div><label for="en-words">Words written that day</label>
-        <input id="en-words" type="number" inputmode="numeric" min="0" max="${cfg().maxDailyWords}" step="1" value="${existing || ''}" placeholder="0" required>
-        <p class="hint">${existing ? `Currently logged: ${fmt(existing)}. Saving replaces this number.` : 'Nothing logged for this day yet.'}</p></div>
+// Opens under the calendar when you tap a day. Sets that day's total (unlike Add, which adds).
+function dayEditorHTML(u) {
+  const date = S.editDate, w = u.entries[date] || 0;
+  return `<section class="day-editor" id="day-editor" aria-label="Edit ${esc(dateLabel(date))}">
+    <div class="row between"><strong>${dateLabel(date)}</strong><span class="muted small">${w ? `${words(w)} logged` : 'Nothing logged'}</span></div>
+    <form id="day-form" class="stack" novalidate style="margin-top:10px">
+      <div><label for="day-words">Set this day’s total</label>
+        <input id="day-words" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" value="${w || ''}" aria-describedby="day-error">
+        <p class="field-error" id="day-error" hidden></p></div>
       <div class="row">
-        <button class="btn" type="submit">${existing ? 'Update' : 'Save'}</button>
-        ${existing ? '<button class="btn danger" type="button" data-action="delete-entry">Delete</button>' : ''}
+        <button class="btn" type="submit">Save</button>
+        ${w ? '<button class="btn danger" type="button" data-action="delete-entry">Delete</button>' : ''}
+        <button class="btn plain" type="button" data-action="close-editor" style="margin-left:auto">Close</button>
       </div>
     </form>
   </section>`;
@@ -517,7 +571,6 @@ function meHTML() {
   const u = meUser();
   if (!u) return '<p class="muted">Account not found.</p>';
   return `${dashboardHTML(u, true)}
-    ${entryHTML(u)}
     <section class="card">
       <h2>Project</h2>
       <form id="profile-form" class="stack">
@@ -655,14 +708,13 @@ function adminHTML() {
 
 // ===== Share =====
 function shareMeText() {
-  const u = meUser(), st = stats(u), c = cfg(), dn = dayNum();
-  const pace = dn === 0 ? 'Not started' : (st.diff > 0 ? `${fmt(st.diff)} ahead` : st.diff < 0 ? `${fmt(-st.diff)} behind` : 'On pace');
+  const u = meUser(), st = stats(u), c = cfg(), dn = dayNum(), pace = paceToday(u, st);
   return [
     `${u.username}: day ${dn} of ${c.days}`,
     u.projectTitle ? `Project: ${u.projectTitle}` : null,
     `Total: ${fmt(st.total)} / ${fmt(st.goal)} (${st.pct}%)`,
     `Today: ${fmt(st.todayWords)} / ${fmt(u.dailyGoal)}`,
-    `Pace: ${pace}`,
+    pace.share ? `Pace: ${pace.share}` : null,
     `Streak: ${st.current} day${st.current === 1 ? '' : 's'}`
   ].filter(Boolean).join('\n');
 }
@@ -689,13 +741,87 @@ async function share(text) {
   }
 }
 
+// ===== Logging words =====
+function wordsError(n, allowZero) {
+  if (Number.isNaN(n) || (n === 0 && !allowZero)) return 'Enter a whole number of words.';
+  if (n > cfg().maxDailyWords) return `That’s more than the ${fmt(cfg().maxDailyWords)}-word daily limit.`;
+  return '';
+}
+
+function showFieldError(inputId, msg) {
+  const input = $('#' + inputId), err = $('#' + input.getAttribute('aria-describedby'));
+  err.textContent = msg;
+  err.hidden = !msg;
+  input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  if (msg) input.focus();
+}
+
+// The form may be gone if the request logged them out, so check before touching it.
+function setButtonText(sel, text) { const b = $(sel); if (b) b.textContent = text; }
+
+async function addWords() {
+  if (S.busy) return;
+  const n = parseWords($('#add-words').value);
+  const err = wordsError(n, false);
+  showFieldError('add-words', err);
+  if (err) return;
+  const shownDate = today();
+  $('#add-form .btn').textContent = 'Adding…';
+  let out;
+  try {
+    out = await run('addWords', { words: n });
+  } catch (_) {
+    setButtonText('#add-form .btn', 'Add'); // the typed number stays so they can retry
+    return;
+  }
+  const a = out.added, goal = meUser().dailyGoal;
+  let msg;
+  if (a.date !== shownDate) msg = `Added ${words(a.words)} to ${dateLabel(a.date)}.`;
+  else if (a.before < goal && a.after >= goal) msg = `Daily goal met! ${fmt(a.after)} of ${fmt(goal)}`;
+  else msg = `Added ${words(a.words)}. Today: ${fmt(a.after)} of ${fmt(goal)}.`;
+  toast(msg, { label: 'Undo', onClick: () => undoAdd(a) });
+}
+
+async function undoAdd(a) {
+  try {
+    const out = await run('addWords', { words: -a.words });
+    if (out) toast(`Undone. Today: ${fmt(out.added.after)} of ${fmt(meUser().dailyGoal)}.`);
+  } catch (_) { /* error already shown */ }
+}
+
+async function saveDay() {
+  if (S.busy) return;
+  const n = parseWords($('#day-words').value);
+  const err = wordsError(n, true);
+  showFieldError('day-words', err);
+  if (err) return;
+  const date = S.editDate;
+  $('#day-form .btn').textContent = 'Saving…';
+  try {
+    await run('saveEntry', { date, words: n });
+  } catch (_) {
+    setButtonText('#day-form .btn', 'Save');
+    return;
+  }
+  closeEditor();
+  toast(`${dateLabel(date)} updated.`);
+}
+
+function closeEditor() {
+  const date = S.editDate;
+  S.editDate = null;
+  render();
+  const day = document.querySelector(`[data-action="pick-date"][data-date="${date}"]`);
+  if (day) day.focus();
+}
+
 // ===== Events =====
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-action]');
   if (!el || el.disabled) return;
   const a = el.dataset.action;
   try {
-    if (a === 'tab') { S.tab = el.dataset.tab; S.viewing = null; render(); window.scrollTo(0, 0); }
+    if (a === 'tab') { S.tab = el.dataset.tab; S.viewing = null; S.editDate = null; render(); window.scrollTo(0, 0); }
     else if (a === 'auth-mode') { S.authMode = el.dataset.mode; render(); }
     else if (a === 'view') {
       if (el.dataset.user === S.data.me.username) { S.tab = 'me'; S.viewing = null; }
@@ -705,19 +831,21 @@ document.addEventListener('click', async e => {
     else if (a === 'back') { S.viewing = null; S.tab = 'group'; render(); }
     else if (a === 'sort') { S.sortBy = el.dataset.sort; render(); }
     else if (a === 'pick-date') {
-      S.selectedDate = el.dataset.date; render();
-      const card = $('#entry-card'); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      const input = $('#en-words'); if (input) input.focus({ preventScroll: true });
+      if (S.editDate === el.dataset.date) { closeEditor(); return; }
+      S.editDate = el.dataset.date; render();
+      $('#day-words').focus();
     }
+    else if (a === 'close-editor') closeEditor();
     else if (a === 'delete-entry') {
-      if (!confirm(`Delete your entry for ${dateLabel(S.selectedDate)}?`)) return;
-      await run('deleteEntry', { date: S.selectedDate }, 'Entry deleted.');
+      if (!confirm(`Delete your entry for ${dateLabel(S.editDate)}?`)) return;
+      await run('deleteEntry', { date: S.editDate }, 'Entry deleted.');
+      closeEditor();
     }
     else if (a === 'share-me') share(shareMeText());
     else if (a === 'share-group') share(shareGroupText());
     else if (a === 'logout') {
       try { await api('logout'); } catch (_) {}
-      setToken(null); S.data = null; S.tab = 'me'; S.viewing = null; render();
+      setToken(null); S.data = null; S.tab = 'me'; S.viewing = null; S.editDate = null; render();
     }
     else if (a === 'admin-edit') { S.adminDate = el.dataset.date; render(); $('#ad-words') && $('#ad-words').focus(); }
     else if (a === 'admin-delete') {
@@ -734,8 +862,7 @@ document.addEventListener('click', async e => {
 
 document.addEventListener('change', e => {
   const id = e.target.id;
-  if (id === 'en-date') { S.selectedDate = e.target.value; render(); }
-  else if (id === 'ad-user') { S.adminUser = e.target.value; render(); }
+  if (id === 'ad-user') { S.adminUser = e.target.value; render(); }
   else if (id === 'ad-date') { S.adminDate = e.target.value; render(); }
 });
 
@@ -748,6 +875,16 @@ document.addEventListener('input', e => {
       : 'Your goal can’t be changed after you register.';
   }
 });
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.editDate && $('#day-editor')) closeEditor();
+});
+
+// The Undo toast stays up while it's hovered or focused.
+$('#toast').addEventListener('mouseenter', () => clearTimeout(toastTimer));
+$('#toast').addEventListener('focusin', () => clearTimeout(toastTimer));
+$('#toast').addEventListener('mouseleave', () => { if ($('#toast').classList.contains('show')) armToast(); });
+$('#toast').addEventListener('focusout', () => { if ($('#toast').classList.contains('show')) armToast(); });
 
 document.addEventListener('submit', async e => {
   e.preventDefault();
@@ -764,10 +901,8 @@ document.addEventListener('submit', async e => {
       });
       await loadState();
     }
-    else if (id === 'entry-form') {
-      const words = Number($('#en-words').value);
-      await run('saveEntry', { date: S.selectedDate, words }, 'Saved.');
-    }
+    else if (id === 'add-form') await addWords();
+    else if (id === 'day-form') await saveDay();
     else if (id === 'profile-form') {
       await run('updateProfile', { projectTitle: $('#pf-title').value }, 'Title saved.');
     }

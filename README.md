@@ -1,4 +1,4 @@
-# November word tracker: setup
+# November Word Tracker: setup
 
 Two parts:
 

@@ -1,5 +1,5 @@
 /**
- * November word tracker: backend
+ * November Word Tracker: backend
  * Paste this into Extensions > Apps Script in your Google Sheet.
  * Run setup() once, then deploy as a web app (see README).
  * After any change to this file: Deploy > Manage deployments > Edit > Version: New version.
@@ -41,7 +41,7 @@ function ensureSheet(ss, name, headers) {
 
 // ===== Web endpoints =====
 function doGet() {
-  return ContentService.createTextOutput('Word tracker API is running.');
+  return ContentService.createTextOutput('November Word Tracker API is running.');
 }
 
 function doPost(e) {
@@ -80,6 +80,12 @@ function handle(req) {
     case 'saveEntry':
       saveEntry(me.username, req.date, req.words);
       return state(me);
+    case 'addWords': {
+      const added = addWords(me.username, req.words);
+      const out = state(me);
+      out.added = added;
+      return out;
+    }
     case 'deleteEntry':
       deleteEntry(me.username, req.date);
       return state(me);
@@ -164,11 +170,32 @@ function saveEntry(username, date, words) {
   validateDate(date);
   const w = toInt(words);
   if (!(w >= 0 && w <= MAX_DAILY_WORDS)) fail('Word count must be a whole number from 0 to ' + MAX_DAILY_WORDS.toLocaleString('en-US') + '.');
+  writeEntry(username, date, w, findEntry(username, date));
+}
 
+// Adds words to today's entry (negative to undo). The server's date is used so a page
+// left open past midnight logs to the real day; the page is told which date was used.
+function addWords(username, words) {
+  const date = today();
+  if (date < START_DATE || date > END_DATE) fail('Logging is only open during November.');
+  const w = toInt(words);
+  if (!(w !== 0 && Math.abs(w) <= MAX_DAILY_WORDS)) fail('Enter a whole number of words.');
+
+  const existing = findEntry(username, date);
+  const before = existing ? Number(existing.words) || 0 : 0;
+  const after = Math.max(0, before + w);
+  if (after > MAX_DAILY_WORDS) fail('That would make today ' + after.toLocaleString('en-US') + ' words. The daily limit is ' + MAX_DAILY_WORDS.toLocaleString('en-US') + '.');
+  writeEntry(username, date, after, existing);
+  return { date: date, words: after - before, before: before, after: after };
+}
+
+function findEntry(username, date) {
   const key = username.toLowerCase();
-  const existing = readRows('Entries').find(r => r.username.toLowerCase() === key && r.date === date);
-  const sh = sheet('Entries');
+  return readRows('Entries').find(r => r.username.toLowerCase() === key && r.date === date) || null;
+}
 
+function writeEntry(username, date, w, existing) {
+  const sh = sheet('Entries');
   if (w === 0) {
     if (existing) sh.deleteRow(existing._row);
     return;
