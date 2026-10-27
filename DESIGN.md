@@ -33,7 +33,7 @@ Dark mode follows `prefers-color-scheme`; every token above has a dark value.
 - **Literata** (`--serif`): headings, big numbers (totals, stats, leaderboard words), the quote. Weights 400/600/700.
 - **Atkinson Hyperlegible** (`--sans`): everything else. Base 16px / 1.5.
 - Numbers use `font-variant-numeric: tabular-nums` so they don't jitter as they change.
-- Sizes: hero total 2.75rem; Today number and card titles 1.125–1.5rem; labels and hints 0.8125–0.875rem.
+- Sizes: hero total 2.75rem; your name 1.5rem; card titles and stat values 1.125rem; body and the Today count 1rem; labels and hints 0.8125–0.875rem.
 
 ## Layout
 
@@ -50,7 +50,7 @@ Dark mode follows `prefers-color-scheme`; every token above has a dark value.
 | Today section | `.hero-today` | Divider, "Today" / "Goal met" with "640 of 1,667", a 6px bar (`.bar.gold` once met), and on your own page the Add form. |
 | Add row | `.quick` | Input and button side by side at every width; both 48px tall; button min 96px wide. |
 | Progress bar | `.bar` / `.bar.gold` | Decorative (`aria-hidden`); the text next to it carries the meaning. |
-| Stats | `.stats.three` | Three equal boxes: Pace (today only), Needed / day (the month), Streak. Values stay short enough for one line at 320px. |
+| Stats | `.stats.three` | Three equal boxes: Pace (today only), Needed / day (the month), Streak. Every label, value and sub-line fits on one line at 320px; below 360px the boxes use 8px side padding and 0.75rem labels. |
 | Calendar | `.cal`, `.day` | States: `none`, `partial` (wrote), `met`, `future` (dashed), `today` (gold ring), `selected` (ink outline). Days up to today are buttons on your own page. |
 | Day editor | `.day-editor` | Opens under the calendar for the tapped day. Sets that day's total. Escape or Close returns focus to the day. |
 | Buttons | `.btn` + `secondary`, `danger`, `plain`, `small`, `block` | Min 44px tall (36px for `small`, used only in dense lists). |
@@ -60,9 +60,19 @@ Dark mode follows `prefers-color-scheme`; every token above has a dark value.
 
 ## Patterns
 
-- **Forms:** every input has a visible `<label>`; placeholders are never the only label. Number fields are `type="text" inputmode="numeric"` and accept commas and spaces ("1,200").
+- **Forms:** every input has a visible `<label>`; placeholders are never the only label. The word-count fields on My progress (Add box, day editor) are `type="text" inputmode="numeric"` and accept commas and spaces ("1,200"). The registration goal and the Admin entry box are still `type="number"`.
 - **Adding vs setting:** the Add box adds this session's words to today. Only the calendar day editor sets a day's total.
+- **Pace is today only.** It never shows the month's ahead/behind number; Needed / day covers the month.
+
+  | Situation | Value | Sub-line |
+  |---|---|---|
+  | Before Nov 1 | — | starts Nov 1 |
+  | Below today's goal | 1,027 | to go today |
+  | Exactly at the goal | Done (`--blue`) | goal met |
+  | Past the goal | +113 (`--blue`) | over goal |
+  | After Nov 30 | — | November’s done |
+
 - **Saving:** the button reads "Adding…" or "Saving…" and every button is disabled while a request runs. On error the typed value stays and a toast explains.
 - **Undo over confirmation** for quick, reversible actions (Add). Use `confirm()` only for deleting entries or users.
 - **Today's goal met:** the message "Daily goal met! 1,780 of 1,667", the Today bar turns gold, and the row reads "Goal met" for the rest of the day.
-- **Copy:** short and plain, in sentence case. Numbers use thousands separators. Use the curly apostrophe (’).
+- **Copy:** short and plain, in sentence case. The app's name, **November Word Tracker**, is the one exception: always title case. Numbers use thousands separators. Use the curly apostrophe (’).
